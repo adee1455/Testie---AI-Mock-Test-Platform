@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
 import { QuizState, QuizAction, QuizSettings, QuizQuestion } from '../types';
-import { generateQuestion } from '../services/geminiService';
+import { generateQuestion, resetUsedQuestions } from '../services/geminiService';
 
 // Initial state
 const initialState: QuizState = {
@@ -43,6 +43,8 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
         questions: [],
         currentQuestionIndex: 0,
         userAnswers: {},
+        status: 'idle',
+        error: null,
       };
     case 'SET_QUESTION':
       const updatedQuestions = [...state.questions];
@@ -50,6 +52,7 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
       return {
         ...state,
         questions: updatedQuestions,
+        status: 'idle',
       };
     case 'SET_USER_ANSWER':
       return {
@@ -70,6 +73,11 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
         error: action.payload,
         status: action.payload ? 'error' : state.status,
       };
+    case 'SET_CURRENT_QUESTION_INDEX':
+      return {
+        ...state,
+        currentQuestionIndex: action.payload,
+      };
     case 'RESET_QUIZ':
       return {
         ...initialState,
@@ -86,6 +94,9 @@ export function QuizProvider({ children }: { children: ReactNode }) {
   // Start the quiz with given settings
   const startQuiz = async (settings: QuizSettings) => {
     try {
+      // Reset used questions when starting a new quiz
+      resetUsedQuestions();
+      
       dispatch({ type: 'SET_SETTINGS', payload: settings });
       dispatch({ type: 'SET_STATUS', payload: 'loading' });
       
@@ -97,7 +108,6 @@ export function QuizProvider({ children }: { children: ReactNode }) {
           type: 'SET_QUESTION',
           payload: { index: 0, question: firstQuestion },
         });
-        dispatch({ type: 'SET_STATUS', payload: 'idle' });
       } else {
         throw new Error('Failed to generate the first question');
       }
@@ -131,49 +141,34 @@ export function QuizProvider({ children }: { children: ReactNode }) {
       // Set status to fetching while we get the next question
       dispatch({ type: 'SET_STATUS', payload: 'fetching' });
       
-      // Only generate if we don't already have this question
-      if (!state.questions[nextIndex]) {
-        const nextQuestion = await generateQuestion(
-          state.settings.topic,
-          state.settings.difficulty
-        );
-        
-        if (nextQuestion) {
-          dispatch({
-            type: 'SET_QUESTION',
-            payload: { index: nextIndex, question: nextQuestion },
-          });
-        } else {
-          throw new Error('Failed to generate the next question');
-        }
+      // Generate next question
+      const nextQuestion = await generateQuestion(
+        state.settings.topic,
+        state.settings.difficulty
+      );
+      
+      if (nextQuestion) {
+        dispatch({
+          type: 'SET_QUESTION',
+          payload: { index: nextIndex, question: nextQuestion },
+        });
+        // Update current question index
+        dispatch({ type: 'SET_CURRENT_QUESTION_INDEX', payload: nextIndex });
+        dispatch({ type: 'SET_STATUS', payload: 'idle' });
+      } else {
+        throw new Error('Failed to generate the next question');
       }
-      
-      // Move to next question
-      dispatch({ type: 'SET_STATUS', payload: 'idle' });
-      
     } catch (error) {
       dispatch({
         type: 'SET_ERROR',
         payload: error instanceof Error ? error.message : 'An unknown error occurred',
       });
-      return;
     }
-    
-    // Update current question index
-    return new Promise<void>((resolve) => {
-      // Use setTimeout to ensure state is updated properly
-      setTimeout(() => {
-        dispatch({
-          type: 'SET_STATUS',
-          payload: 'idle',
-        });
-        resolve();
-      }, 0);
-    });
   };
 
   // Reset the quiz to initial state
   const resetQuiz = () => {
+    resetUsedQuestions();
     dispatch({ type: 'RESET_QUIZ' });
   };
 
@@ -193,5 +188,10 @@ export function QuizProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// Custom hook to use the quiz context
-export const useQuiz = () => useContext(QuizContext);
+export const useQuiz = () => {
+  const context = useContext(QuizContext);
+  if (!context) {
+    throw new Error('useQuiz must be used within a QuizProvider');
+  }
+  return context;
+};

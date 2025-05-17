@@ -25,6 +25,13 @@ const QuizScreen: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
+  // Save time spent when quiz is completed
+  useEffect(() => {
+    if (currentIndex === state.settings.numberOfQuestions - 1 && isAnswered) {
+      localStorage.setItem('quizTimeSpent', timeSpent.toString());
+    }
+  }, [currentIndex, isAnswered, timeSpent, state.settings.numberOfQuestions]);
+
   // Format time as mm:ss
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -58,9 +65,9 @@ const QuizScreen: React.FC = () => {
 
   if (!currentQuestion) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center p-8">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-12 h-12 border-4 border-gray-800 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">Loading question...</p>
         </div>
       </div>
@@ -71,28 +78,28 @@ const QuizScreen: React.FC = () => {
   const progress = ((currentIndex + 1) / state.settings.numberOfQuestions) * 100;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8">
       <div className="max-w-3xl mx-auto">
         {/* Quiz header with progress */}
         <div className="bg-white rounded-xl shadow-md p-4 mb-6">
           <div className="flex justify-between items-center mb-2">
-            <div className="text-gray-600 font-medium">
+            <div className="text-gray-800 font-medium">
               Question {currentIndex + 1} of {state.settings.numberOfQuestions}
             </div>
-            <div className="flex items-center text-gray-600">
+            <div className="flex items-center text-gray-800">
               <Timer size={16} className="mr-1" />
               <span>{formatTime(timeSpent)}</span>
             </div>
           </div>
           
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
+          <div className="w-full bg-gray-100 rounded-full h-2.5">
             <div 
-              className="bg-blue-600 h-2.5 rounded-full transition-all duration-500 ease-out"
+              className="bg-gray-800 h-2.5 rounded-full transition-all duration-500 ease-out"
               style={{ width: `${progress}%` }}
             ></div>
           </div>
           
-          <div className="mt-2 text-sm text-gray-500">
+          <div className="mt-2 text-sm text-gray-600">
             Topic: {state.settings.topic} | Difficulty: {state.settings.difficulty}
           </div>
         </div>
@@ -102,6 +109,15 @@ const QuizScreen: React.FC = () => {
           <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-6">
             {currentQuestion.question}
           </h2>
+
+          {/* Code snippet or additional content if available */}
+          {currentQuestion.codeSnippet && (
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200 overflow-x-auto">
+              <pre className="text-sm font-mono text-gray-800 whitespace-pre-wrap">
+                {currentQuestion.codeSnippet}
+              </pre>
+            </div>
+          )}
 
           {/* Answer options */}
           <div className="space-y-3">
@@ -124,10 +140,10 @@ const QuizScreen: React.FC = () => {
               } else {
                 // Not answered yet
                 optionClasses += 
-                  "border-gray-200 hover:border-blue-400 hover:bg-blue-50 ";
+                  "border-gray-200 hover:border-gray-800 hover:bg-gray-50 ";
                 
                 if (option === selectedAnswer) {
-                  optionClasses += "border-blue-500 bg-blue-50 ";
+                  optionClasses += "border-gray-800 bg-gray-50 ";
                 }
               }
 
@@ -137,7 +153,7 @@ const QuizScreen: React.FC = () => {
                   className={optionClasses}
                   onClick={() => handleSelectAnswer(option)}
                 >
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center mr-3 font-medium">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 text-gray-800 flex items-center justify-center mr-3 font-medium">
                     {option}
                   </div>
                   <div className="flex-1">
@@ -188,7 +204,7 @@ const QuizScreen: React.FC = () => {
             <button
               onClick={handleNextQuestion}
               disabled={isLoading}
-              className={`flex items-center py-2.5 px-5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow transition duration-200 ${
+              className={`flex items-center py-2.5 px-5 bg-gray-800 hover:bg-gray-900 text-white font-medium rounded-lg shadow transition duration-200 ${
                 isLoading ? 'opacity-70 cursor-not-allowed' : ''
               }`}
             >
@@ -209,7 +225,7 @@ const QuizScreen: React.FC = () => {
           )}
           
           {!showFeedback && !selectedAnswer && (
-            <div className="flex items-center text-gray-500">
+            <div className="flex items-center text-gray-600">
               <HelpCircle size={16} className="mr-1.5" />
               <span>Select an answer to continue</span>
             </div>

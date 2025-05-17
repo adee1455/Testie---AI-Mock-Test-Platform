@@ -14,6 +14,7 @@ export interface QuizQuestion {
   };
   correctAnswer: 'A' | 'B' | 'C' | 'D';
   explanation: string;
+  codeSnippet?: string;
 }
 
 export interface QuizState {

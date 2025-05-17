@@ -4,7 +4,12 @@ const GEMINI_API_KEY = 'AIzaSyCGYsSSxUKPKD2F9c-7M6mZ51OSpl1_t8w';
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
 // Keep track of used questions to ensure uniqueness
-const usedQuestions = new Set<string>();
+let usedQuestions = new Set<string>();
+
+// Reset the used questions set
+export function resetUsedQuestions() {
+  usedQuestions = new Set<string>();
+}
 
 /**
  * Calls the Gemini API to generate a quiz question based on given parameters
@@ -15,8 +20,13 @@ export async function generateQuestion(
   retries = 3
 ): Promise<QuizQuestion | null> {
   const prompt = `
-You are a quiz generator. Create a single multiple-choice quiz question on the topic of "${topic}" at a "${difficulty}" difficulty level. Make sure the question is unique and challenging. The format should be:
+You are a quiz generator. Create a unique multiple-choice quiz question on the topic of "${topic}" at a "${difficulty}" difficulty level. Make sure the question is unique and challenging. The format should be:
 Question: <The question>
+[If the question involves code, include it in a code block like this:]
+Code:
+\`\`\`
+<code snippet here>
+\`\`\`
 A. <Option A>
 B. <Option B>
 C. <Option C>
@@ -29,6 +39,9 @@ Important:
 - Avoid obvious incorrect answers
 - Include plausible distractors
 - Keep question text clear and concise
+- The question MUST be unique and different from previous questions
+- Each option should be a complete, standalone answer
+- If the question involves code, make sure to include the relevant code snippet
 `;
 
   const requestOptions = {
@@ -47,7 +60,7 @@ Important:
         },
       ],
       generationConfig: {
-        temperature: 0.8, // Increased for more variety
+        temperature: 0.9,
         topK: 40,
         topP: 0.95,
         maxOutputTokens: 1024,
@@ -117,8 +130,12 @@ function parseQuestionFromText(text: string): QuizQuestion {
 
   try {
     // Extract question
-    const questionMatch = text.match(/Question:\s*(.*?)(?=\n[A-D]\.|\n\n)/s);
+    const questionMatch = text.match(/Question:\s*(.*?)(?=\n(?:Code:|[A-D]\.|\n\n))/s);
     if (!questionMatch) return defaultQuestion;
+    
+    // Extract code snippet if present
+    const codeMatch = text.match(/Code:\s*\n\`\`\`\n([\s\S]*?)\n\`\`\`/);
+    const codeSnippet = codeMatch ? codeMatch[1].trim() : undefined;
     
     // Extract options
     const optionAMatch = text.match(/A\.\s*(.*?)(?=\n[B-D]\.|\n\n|$)/s);
@@ -138,6 +155,7 @@ function parseQuestionFromText(text: string): QuizQuestion {
     
     return {
       question: questionMatch[1].trim(),
+      codeSnippet,
       options: {
         A: optionAMatch[1].trim(),
         B: optionBMatch[1].trim(),

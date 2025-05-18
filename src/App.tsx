@@ -2,6 +2,8 @@ import React, { Suspense, lazy } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useQuiz, QuizProvider } from './context/QuizContext';
 import ErrorFallback from './components/ErrorFallback';
+import { Analytics } from "@vercel/analytics/react";
+
 
 // Lazy load components
 const HomeScreen = lazy(() => import('./components/HomeScreen'));
@@ -49,6 +51,7 @@ const QuizApp: React.FC = () => {
 function App() {
   return (
     <QuizProvider>
+      <Analytics />
       <QuizApp />
     </QuizProvider>
   );

@@ -1,14 +1,16 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useQuiz, QuizProvider } from './context/QuizContext';
 import ErrorFallback from './components/ErrorFallback';
 import { Analytics } from "@vercel/analytics/react";
-
+import Navbar from './components/Navbar';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
 // Lazy load components
 const HomeScreen = lazy(() => import('./components/HomeScreen'));
 const QuizScreen = lazy(() => import('./components/QuizScreen'));
 const ResultsScreen = lazy(() => import('./components/ResultsScreen'));
+const InstallScreen = lazy(() => import('./components/InstallScreen'));
 
 // Loading component
 const LoadingScreen = () => (
@@ -49,10 +51,29 @@ const QuizApp: React.FC = () => {
 };
 
 function App() {
+  const [showNavbar, setShowNavbar] = useState(true);
+
+  useEffect(() => {
+    const checkPWA = () => {
+      const isPwa = window.matchMedia('(display-mode: standalone)').matches
+        || (window.navigator as any).standalone === true;
+      setShowNavbar(!isPwa);
+    };
+    checkPWA();
+    window.addEventListener('resize', checkPWA);
+    return () => window.removeEventListener('resize', checkPWA);
+  }, []);
+
   return (
     <QuizProvider>
-      <Analytics />
-      <QuizApp />
+      <BrowserRouter>
+        {showNavbar && <Navbar />}
+        <Routes>
+          <Route path="/Install" element={<InstallScreen />} />
+          <Route path="*" element={<QuizApp />} />
+        </Routes>
+        <Analytics />
+      </BrowserRouter>
     </QuizProvider>
   );
 }

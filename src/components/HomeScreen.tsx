@@ -17,11 +17,11 @@ const HomeScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4 mt-16">
       <div className="max-w-2xl w-full">
         {/* Header */}
         <div className="text-center mb-8">
-          <img src="/logo.png" alt="Testie Logo" className="mx-auto mb-6 w-36 h-36 rounded-full bg-black object-contain border-2 border-gray-800 shadow-lg" />
+          <img src="/logo.png" alt="Testie Logo" className="mx-auto mb-6 w-28 h-28 rounded-full bg-black object-contain border-2 border-gray-800 shadow-lg" />
           <h1 className="text-4xl font-bold text-gray-800 mb-4">
             Welcome to Testie
           </h1>
